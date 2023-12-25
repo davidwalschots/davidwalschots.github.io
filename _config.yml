@@ -22,7 +22,7 @@ title: Thoughts on software
 email:
 author: David Walschots
 description: >- # this means to ignore newlines until "baseurl:"
-  David Walschots sharing his thoughts on software.
+  Simply sharing some thoughts on software development.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://davidwalschots.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username:
