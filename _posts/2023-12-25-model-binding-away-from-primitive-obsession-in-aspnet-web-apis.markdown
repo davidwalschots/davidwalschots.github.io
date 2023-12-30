@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Model Binding away from Primitive Obsession"
+title:  "Model Binding away from Primitive Obsession in ASP.NET Web APIs"
 date:   2023-12-25 14:46:08 +0100
-categories: csharp aspnet
+categories: c# asp.net
 ---
 
-Type systems are great, yet often we don't use them to their full potential. We often use primitive types to represent domain concepts. For example, we may use an `int` to represent a `CustomerId` or a `string` to represent a `Week`. This post will attempt to answer the question: what can I do at the ASP.NET Web API boundary to avoid using primitive types? Sadly, it turns out things aren't so simple, and thus be forewarned: one might choose to not use ASP.NET's model binding capabilities for this purpose.
+Type systems are great, yet often not used to their full potential. Primitive types are commonly used to represent domain concepts. For example, by using an `int` to represent a `CustomerId` or a `string` to represent a `Week`. This post will attempt to answer the question: what can I do at the ASP.NET Web API boundary to avoid using primitive types? Sadly, it turns out things aren't so simple, and thus be forewarned: one might choose to not use ASP.NET's model binding capabilities for this purpose.
 
-Let's take a rather simple case: the number `123` representing a `CustomerId`. We can use a `record` to represent this:
+Let's take a rather simple case: the number `123` representing a `CustomerId`, representable as a `record`:
 
 {% highlight csharp %}
 public readonly record struct CustomerId(int Value) { }
@@ -16,17 +16,17 @@ public readonly record struct CustomerId(int Value) { }
 The [model binding documentation](https://learn.microsoft.com/en-us/aspnet/core/mvc/models/model-binding?view=aspnetcore-8.0) mentions multiple options for converting `123` into a `CustomerId`, amongst them:
 
 1. `IParsable<T>.TryParse`, which converts a `string` into a `T`. 
-2. `TryParse`, which is accessed through reflection, and considered a lesser alternative to option 1. Therefore, we'll ignore it.
+2. `TryParse`, which is accessed through reflection, and considered a lesser alternative to option 1. I'll ignore it for the remainder of this post.
 3. Input formatters, which convert request body content, e.g. `JsonConverter<T>` for JSON.
-4. `TypeConverter`, which converts an `object` to another `object` and does so non-generically thus adding boxing overhead.
+4. `TypeConverter`, which converts an `object` to another `object` (non-generically) thus adding boxing overhead.
 
-In the remainder of this post we'll see that the combination of option 1 and 3 works best to cover all regular cases.
+In the remainder of this post I'll show that the combination of option 1 and 3 works best to cover all regular cases.
 
 ## Option 1: IParsable&lt;T&gt;
 
-`IParsable<T>` was introduced with .NET 7 as part of [generic math](https://learn.microsoft.com/en-us/dotnet/standard/generics/math) functionality. Its declaration is quite interesting, as it uses the curiously recurring template pattern: `interface IParsable<TSelf> where TSelf : IParsable<TSelf>?`. More information on this pattern can be found [here](https://zpbappi.com/curiously-recurring-template-pattern-in-csharp/).
+`IParsable<T>` was introduced with .NET 7 as part of [generic math](https://learn.microsoft.com/en-us/dotnet/standard/generics/math) functionality. Its declaration is quite interesting as it uses the curiously recurring template pattern: `interface IParsable<TSelf> where TSelf : IParsable<TSelf>?`. More information on this pattern can be found [here](https://zpbappi.com/curiously-recurring-template-pattern-in-csharp/).
 
-`IParsable<T>` only applies when passing data through the request URI (`FromQuery` or `FromRoute`) or as form data (`FromForm`), as in the case of JSON (`FromBody`) we would represent the data as a `number`. A first attempt at using `IParsable<T>` would be:
+`IParsable<T>` only applies when passing data through the request URI (`FromQuery` or `FromRoute`) or as form data (`FromForm`). This makes sense, because in those cases a `string` is provided. With JSON (`FromBody`) the data is represented as a `number`, thus making `IParsable<T>` unsuitable. A first attempt at using `IParsable<T>` would be:
 
 {% highlight csharp %}
 public readonly record struct CustomerId(int Value)
@@ -57,11 +57,11 @@ public readonly record struct CustomerId(int Value)
 }
 {% endhighlight %}
 
-Holy smokes, that's quite a lot of code, especially when one would consider the need to repeat this for every `Id` type. Can we do better?
+That's quite a lot of code, especially when one would consider the need to repeat this for every `Id` type. Is there a better approach?
 
 ### Generic type construction
 
-Functions that convert from a number to a `CustomerId`, `EmployeeId`, or whatever other `Id` are all unary, that is: they take one argument. More specifically, they take one argument `T` where `T : INumber<T>` and output the `TId`. As I'm not familiar with the C# type system defining such a construct itself, I defined it myself:
+Functions that convert from a number to a `CustomerId`, `EmployeeId`, or whatever other `Id` are all unary, that is: they take one argument. As I'm not familiar with the C# type system defining a construct which declares a type has a constructor accepting a single argument, I defined it myself:
 
 {% highlight csharp %}
 public interface IUnaryConstructor<TInner, TSelf>
@@ -69,8 +69,6 @@ public interface IUnaryConstructor<TInner, TSelf>
     static abstract TSelf Create(TInner value);
 }
 {% endhighlight %}
-
-In this, I left out the `T : INumber<T>` requirement, as that leaves the `interface` as generic as possible.
 
 With this, the `Parse` and `TryParse` methods can be implemented generically as:
 
@@ -129,7 +127,7 @@ public readonly record struct CustomerId(int Value)
 }
 {% endhighlight %}
 
-With `IParsable<CustomerId>` set up, we can now use the `CustomerId` in both minimal API as well as regular API controllers:
+With `IParsable<CustomerId>` set up the `CustomerId` is usable in minimal and regular API controllers:
 
 {% highlight csharp %}
 // Minimal API
@@ -153,7 +151,7 @@ The data can also be sent in through the request body. This may be inferred by A
 
 > Apply the `[FromBody]` attribute to a parameter to populate its properties from the body of an HTTP request. The ASP.NET Core runtime delegates the responsibility of reading the body to an input formatter.
 
-To process a HTTP request body containing JSON, a `JsonConverter<T>` must be created. An initial implementation could be:
+A `JsonConverter<T>` is used to process a HTTP request body containing JSON. An initial implementation could be:
 
 {% highlight csharp %}
 // Declaring the converter on the type itself.
@@ -187,7 +185,7 @@ A `JsonConverter<T>` does not only convert from some value to `T`, but also conv
 
 ### Generic type construction
 
-We previously defined `IUnaryConstructor<TInner, TSelf>`, which we can now use to define a generic `JsonConverter<T>`. As we also need to provide a generic `Write` implementation we're still missing a key element: a way to generically retrieve the value from any `T`, with `T` being a tuple with one element, i.e. a singleton:
+I previously defined `IUnaryConstructor<TInner, TSelf>`, which one can use to define a generic `JsonConverter<T>`. As the `JsonConverter<T>` forces the creation of a generic `Write` implementation, one additional element is needed: a way to generically retrieve the value from any `T`, with `T` being a tuple with one element, i.e. a singleton:
 
 {% highlight csharp %}
 public interface ISingleton<TInner>
@@ -196,7 +194,7 @@ public interface ISingleton<TInner>
 }
 {% endhighlight %}
 
-Using `IUnaryConstructor<TInner, TSelf>` and `ISingleton<TInner>` we can now define a generic `JsonConverter<T>` for any `T` that holds a single numeric value:
+Using `IUnaryConstructor<TInner, TSelf>` and `ISingleton<TInner>` one can now define a generic `JsonConverter<T>` for any `T` that holds a single numeric value:
 
 {% highlight csharp %}
 public class UnaryNumberConstructorJsonConverter<T, TInner> : JsonConverter<T>
@@ -220,7 +218,9 @@ public class UnaryNumberConstructorJsonConverter<T, TInner> : JsonConverter<T>
 }
 {% endhighlight %}
 
-Thereafter, we modify the `JsonConverterAttribute` usage and implement `ISingleton<int>` on `CustomerId`. The latter being easy as the `Value` property is already present:
+In this implementation `INumberbase<TInner>.CreateChecked` converts from `TInner` to `decimal`. This is required as `Utf8JsonWriter.WriteNumberValue` only accepts `decimal` values.
+
+All that's left now is modifying the `JsonConverterAttribute` usage and implement `ISingleton<int>` on `CustomerId`. The latter being easy as the `Value` property is already present:
 
 {% highlight csharp %}
 [JsonConverter(typeof(UnaryNumberConstructorJsonConverter<CustomerId, int>))]
@@ -232,8 +232,9 @@ public readonly record struct CustomerId(int Value)
 }
 {% endhighlight %}
 
+With `IParsable<CustomerId>` set up the `CustomerId` is usable in minimal and regular API controllers:
 
-With the `JsonConverter<T>` set up, we can now use the `CustomerId` in both minimal API as well as regular API controllers:
+With the `JsonConverter<T>` set up the `CustomerId` is usable in a HTTP request body context in minimal and regular API controllers:
 
 {% highlight csharp %}
 // Minimal API
@@ -244,7 +245,7 @@ app.MapPost("/minimal-body", ([FromBody] Request request) => Results.Ok(request.
 public IActionResult FromBody([FromBody] Request input) => Ok(input.Id);
 {% endhighlight %}
 
-## Option 4: the curious case of TypeConverter
+## Option 4: TypeConverter
 
 Traditionally, the `TypeConverter` type provides a unified way of converting types, yet it's no longer the default for handling in ASP.NET. One reason for this might be that the non-generic nature of `TypeConverter` adds boxing overhead. One can still use `TypeConverter` if one must, though this does require creating an intermediary `JsonConverter<T>` implementation. One such implementation is provided [here](https://github.com/dotnet/runtime/issues/1761#issuecomment-723647307) by [Constantinos Leftheris](https://github.com/cleftheris):
 
@@ -343,7 +344,6 @@ public override T? Read(
 }
 {% endhighlight %}
 
-
 ## OpenAPI Swagger
 
 Without any further configuration the OpenAPI specification generated by Swagger will not understand it should represent `CustomerId` as a `number`:
@@ -365,7 +365,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 {% endhighlight %}
 
-Like before, we run into the problem of this not being a very generic solution to the problem. One could improve the implementation by iterating over all types within e.g. the assembly containing `CustomerId` and then finding all `ISingleton<T>` implementations which have a numeric representation:
+This again is not a very generic solution to the problem. One can improve the implementation by iterating over all types within e.g. the assembly containing `CustomerId` and then finding all `ISingleton<T>` implementations which have a numeric representation:
 
 {% highlight csharp %}
 var numericTypes = new HashSet<Type>
@@ -387,8 +387,12 @@ foreach (Type type in typeof(CustomerId).Assembly.GetTypes())
 }
 {% endhighlight %}
 
-The above implementation could be adjusted to support other types such as `string` or `boolean` by modifying the `HashSet<Type>` to a `Dictionary<Type, Func<OpenApiSchema>>`, which is something I'll leave as an exercise to the reader.
+The above implementation can be adjusted to support other types such as `string` or `boolean` by modifying the `HashSet<Type>` to a `Dictionary<Type, string>`, where the `string` represents a JSON type such as `"number"`. Implementing this is something I'll leave as an exercise to the reader.
 
 ## Conclusion
 
-I covered a lot of ground in this post. It might leave you wondering if this is the right path to take. After all, this is a lot of code to do something that is seemingly very trivial. Why not simply use the primitive type in the contract and immediately translate it to the domain type within the controller? Using some form of automatic mapping perhaps? Those are definitely options to consider! I am certainly not advocating for the approach described in this post, but I do hope it has given you some insights that you can use in making the right choice.
+I covered a lot of ground in this post. It might leave you wondering if this is the right path to take. After all, this is a lot of code to do something that is seemingly very trivial. Why not simply use the primitive type in the contract and immediately translate it to the domain type within the controller? Using some form of automatic mapping perhaps? Those are definitely options to consider! I am certainly not advocating for the approach described in this post, but I do hope it has given you some insights that you can use in making the right decision.
+
+### References
+
+Besides the references linked to within this post, I also used knowledge acquired through [this](https://dev.to/joaofbantunes/getting-a-complex-type-as-a-simple-type-from-the-query-string-in-a-aspnet-core-api-controller-oa2) blog post by [João Antunes](https://github.com/joaofbantunes).
