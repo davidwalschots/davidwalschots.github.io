@@ -1,11 +1,11 @@
 ---
 layout: post
 title:  "Model Binding away from Primitive Obsession in ASP.NET Web APIs"
-date:   2023-12-25 14:46:08 +0100
+date:   2024-01-05 08:46:08 +0100
 categories: csharp asp.net
 ---
 
-Type systems are great yet often not used to their full potential. Primitive types are commonly used to represent domain concepts, e.g. by using an `int` to represent a `CustomerId` or a `string` to represent a `Week`. This post will attempt to answer the question: what can I do at the ASP.NET Web API boundary to avoid using primitive types? Sadly, it turns out things aren't so simple, and thus be forewarned: one might choose to not use ASP.NET's model binding capabilities for this purpose.
+Type systems are great yet often not used to their full potential. Primitive types are commonly used to represent domain concepts, e.g. by using an `int` to represent a `CustomerId` or a `string` to represent a `Week`. This post will attempt to answer the question: what can I do at the ASP.NET Web API boundary to avoid using primitive types? Sadly, this is harder than it looks. Thus be forewarned: one might choose to not use ASP.NET's model binding capabilities for this purpose.
 
 Let's take a rather simple case: the number `123` representing a `CustomerId`, representable as a `record`:
 
