@@ -5,8 +5,7 @@ date:   2020-06-07 08:46:08 +0100
 categories: angular
 ---
 
-
-Today I released `angular-reactive-validation` v4.0.1. There were quite a number of breaking changes with Angular 9 Ivy that prevented users of v3.x to upgrade. However, the library is now fully compatible with Angular 9.
+Today I released [`angular-reactive-validation`](https://www.npmjs.com/package/angular-reactive-validation) v4.0.1. There were quite a number of breaking changes with Angular 9 Ivy that prevented users of v3.x to upgrade. However, the library is now fully compatible with Angular 9.
 
 <!--more-->
 
