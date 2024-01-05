@@ -396,3 +396,7 @@ I covered a lot of ground in this post. It might leave you wondering if this is 
 ### References
 
 Besides the references linked to within this post, I also used knowledge acquired through [this](https://dev.to/joaofbantunes/getting-a-complex-type-as-a-simple-type-from-the-query-string-in-a-aspnet-core-api-controller-oa2) blog post by [João Antunes](https://github.com/joaofbantunes).
+
+## Comments
+
+Post your comments [here](https://gist.github.com/davidwalschots/b81730b933bc975b81ea24a2ff8aad05).
