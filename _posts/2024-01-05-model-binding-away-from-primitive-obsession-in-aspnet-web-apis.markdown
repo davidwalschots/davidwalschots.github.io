@@ -399,6 +399,11 @@ I covered a lot of ground in this post. It might leave you wondering if this is 
 
 Besides the references linked to within this post, I also used knowledge acquired through [this](https://dev.to/joaofbantunes/getting-a-complex-type-as-a-simple-type-from-the-query-string-in-a-aspnet-core-api-controller-oa2) blog post by [João Antunes](https://github.com/joaofbantunes).
 
+## Postscript
+
+On [LinkedIn](https://www.linkedin.com/posts/davidwalschots_model-binding-away-from-primitive-obsession-activity-7148983228836560897-Gq6C) [Torben Koch Pløen](https://www.linkedin.com/in/torbenkochploeen/) mentioned [Vogen](https://github.com/SteveDunn/Vogen) which is a source code generator for generating Value Objects with `TypeConverter` and `System.Text.Json` support. It's definitely worth checking out!
+
+
 ## Comments
 
 Post your comments [here](https://gist.github.com/davidwalschots/b81730b933bc975b81ea24a2ff8aad05).
