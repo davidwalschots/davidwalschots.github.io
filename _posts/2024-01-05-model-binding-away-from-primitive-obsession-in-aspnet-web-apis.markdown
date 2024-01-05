@@ -401,7 +401,7 @@ Besides the references linked to within this post, I also used knowledge acquire
 
 ## Postscript
 
-On [LinkedIn](https://www.linkedin.com/posts/davidwalschots_model-binding-away-from-primitive-obsession-activity-7148983228836560897-Gq6C) [Torben Koch Pløen](https://www.linkedin.com/in/torbenkochploeen/) mentioned [Vogen](https://github.com/SteveDunn/Vogen) which is a source code generator for generating Value Objects with `TypeConverter` and `System.Text.Json` support. It's definitely worth checking out!
+On [LinkedIn](https://www.linkedin.com/posts/davidwalschots_model-binding-away-from-primitive-obsession-activity-7148983228836560897-Gq6C) [Torben Koch Pløen](https://www.linkedin.com/in/torbenkochploeen/) mentioned [Vogen](https://github.com/SteveDunn/Vogen) which is a source code generator for generating value objects with `TypeConverter` and `System.Text.Json` support. Although Vogen doesn't seem to solve the case with objects containing multiple pieces of data (e.g. a `Week` represented as `"2023-W14"` being converted to a `Week(ushort, byte)`), it's definitely worth checking out for the common singleton case!
 
 
 ## Comments
