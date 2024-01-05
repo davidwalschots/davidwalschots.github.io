@@ -7,6 +7,8 @@ categories: roslyn .net
 
 I’m dabbling in creating Roslyn analyzers and soon ran into some problems with Visual Studio’s _Analyzer with Code Fix (.NET Standard)_ project template. In this post I will explain how to find the compilation errors in your unit tests, and how to fix two common compilation errors.
 
+<!--more-->
+
 ## Checking if you have compilation errors
 
 To check for compilation errors in the code under test, open the `DiagnosticVerifier.GetSortedDiagnosticsFromDocuments` method. In it, replace the `compilationWithAnalyzers` variable with the following code and then observe the `diagnostics` variable while debugging:

@@ -7,6 +7,8 @@ categories: .net
 
 I recently had to extend the claims coming from an IdentityServer4 authentication authority. The claims provided by the authority did not include sufficient information to determine the application specific roles of the user. Those additional claims had to come from a web service. I had not worked with claims within .NET Core 2+ before, so some investigation was necessary.
 
+<!--more-->
+
 ## Unsuccessful attempts
 
 My first attempt was to set the `OnTokenValidated` method which is part of the `JwtBearerEvents`. Even though the method is called after successful authentication, it did not allow me to use dependency injection to use the web service.
